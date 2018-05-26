@@ -1,0 +1,23 @@
+{
+  "userhelp": "Currently can use following commands: `{0}ping` `{0}vote` `{0}where` `{0}say <message>` `{0}sayd <message>` `{0}players` `{0}members` `{0}load`\nFor admin commands, `{1}help`.",
+  "pong": "Pong!",
+  "adminhelp": "Currently can use following commands: `{0}shutdown` `{0}token` \nFor user commands, `{1}help`.",
+  "github": "I'm on GitHub: {0}",
+  "vote": "Server's Vote URL: {0}",
+  "loadavg": "Current Load Average is {0}.",
+  "senttodm": "I sent to your DM, check your DM!",
+  "mytoken": "My Token is {0}",
+  "youdonthavear": ":no_good: You don't have a Admin Role.",
+  "checkit": ":ok_hand: Check it on <#{0}>!",
+  "noperm": ":no_good: Sorry, you don't have a permission.",
+  "failednotmatch": "┗━ Failed because does not match user: {0}",
+  "issueduser": "{0} issued command: {1}",
+  "issuedadmin": "{0} issued admin command: {1}",
+  "issuedfailadmin": "{0} issued failed admin command({2}): {1}",
+  "processing_cmd": "┏━ Processing command: {0}, Author: {1} ({2})",
+  "success": "┗━ Success: {0}, shutting down",
+  "atmpfs": "┗━ Attempting force shutdown by {0}",
+  "bye": ":wave: Bye!",
+  "atnotallowed": "Not allowed `@`.",
+  "members": "This guild has {0} members."
+}

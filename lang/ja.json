@@ -1,0 +1,20 @@
+{
+  "userhelp": "現在はこれらのコマンドが使用可能です: `{0}help` `{0}say <message>` `{0}sayd <message>` `{0}members` `{0}load`\nAdminコマンドはこちら: `{1}help`\n機種割り当てはこちらを参照: `{0}roles`",
+  "adminhelp": "現在はこれらのコマンドが使用可能です: `{0}shutdown` `{0}token` \nUserコマンドはこちら: `{1}help`.",
+  "loadavg": "現在のロードアベレージは {0} です。",
+  "senttodm": "DMへ送りました。DMを見てください！",
+  "mytoken": "このBotのトークンは {0} です。\nOAuth2 URL: {1}",
+  "youdonthavear": ":no_good: Adminロールを持っていません。",
+  "checkit": ":ok_hand: <#{0}>で確認してください！",
+  "noperm": ":no_good: すみません、あなたは権限がありません。",
+  "failednotmatch": "┗━ ユーザーがマッチしないため失敗しました: {0}",
+  "issueduser": "{0} がコマンドを送信: {1}",
+  "issuedadmin": "{0} が管理コマンドを送信: {1}",
+  "issuedfailadmin": "{0} が失敗管理コマンドを送信({2}): {1}",
+  "processing_cmd": "┏━ コマンドを処理中: {0}, 送信元: {1} ({2})",
+  "success": "┗━ 成功: {0}、シャットダウン中。",
+  "atmpfs": "┗━ 強制シャットダウンを実行中です。実行元: {0}",
+  "bye": ":wave: じゃあね！",
+  "atnotallowed": "`@`は許可されていません。",
+  "members": "このサーバーは{0}人のメンバーがいます。"
+}
