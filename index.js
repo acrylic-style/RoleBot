@@ -9,6 +9,7 @@ var fs = require('fs');
 var process = require('process');
 var log = new require('log');
 var logger = null;
+var interval = null;
 
   fs.stat('lock', function(err, stat) {
     if(err == null) {
@@ -32,6 +33,13 @@ client.on('ready', () => {
   console.log("Saved lock file");
   });
   client.user.setActivity("Help => " + c.prefix + "help");
+  client.channels.get("450171632024289282").send(":ok_hand: 1 get :exclamation:");
+  interval = client.setInterval(function() {
+    logger.info("Executing Interval function");
+    client.channels.get("449621199966830633").send(":white_check_mark: OK :ok_hand:");
+  }, 3600000);
+  logger.info("Interval Initialized.");
+  console.log("Interval Initialized.");
   logger.info("ChatBot has Fully startup.");
   console.log("ChatBot has Fully startup.");
 });
@@ -151,6 +159,7 @@ client.on('message', msg => {
       const args = msg.content.slice(c.aprefix + "shutdown".length).trim().split(/ +/g);
         if(args[0] == "-f") {
           logger.info("┗━ Attempting Force Shutdown by %s", msg.author.tag);
+          client.clearInterval(interval);
           console.log(f(lang.atmpfs, msg.author.tag));
           fs.unlink('lock', function (err) {
             if (err) throw err;
@@ -161,6 +170,7 @@ client.on('message', msg => {
           client.destroy();
         } else {
           logger.info("┗━ Successfully execution of command, shutting down: %s", msg.content);
+          client.clearInterval(interval);
           console.log(f(lang.success, msg.content));
           fs.unlink('lock', function (err) {
             if (err) throw err;
@@ -211,6 +221,7 @@ client.on('message', msg => {
 client.login(s.token);
 
 process.on('SIGINT', function() {
+    client.clearInterval(interval);
     client.user.setAFK(true);
     fs.unlink('lock', function (err) {
     if (err) throw err;
@@ -227,6 +238,7 @@ process.on('SIGINT', function() {
 });
 
 process.on('uncaughtException', function(err) {
+  client.clearInterval(interval);
   client.user.setAFK(true);
   client.user.setActivity("Bot is down due to errors.");
     fs.unlink('lock', function (err) {
