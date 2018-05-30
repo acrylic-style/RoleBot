@@ -11,13 +11,13 @@ var log = new require('log');
 var logger = null;
 var interval = null;
 
-  fs.stat('lock', function(err, stat) {
+  /*fs.stat('lock', function(err, stat) {
     if(err == null) {
       // file exists, do something (or die)
       console.log("Lock file found, can't run the bot.");
       process.exit();
     }
-  });
+  });*/
 client.on('ready', () => {
   logger = new log('info', fs.createWriteStream('latest.log', 'utf-8'));
   logger.info("Logged in as %s(%s)!", client.user.tag, client.token);
@@ -69,15 +69,7 @@ function addRole(msg, rolename) {
 }
 
 client.on('message', msg => {
- if (msg.author != "<@445996883761037323>") {
-  if (msg.channel == "<#447818914748170261>") {
-    logger.info("Processing text channel: %s", msg.channel);
-    console.log("Processing text channel: %s", msg.channel);
-    if(~msg.content.indexOf("@")) {
-      msg.delete(0).catch(function (error) { msg.channel.send(":no_good: Missing permission: 'manage message'", {embed: {description: "AAAAHHAAAAAAA"}}); console.error("Error: missing 'manage message' permission."); logger.alert("Error: missing 'manage message' permission."); });
-      msg.reply(lang.atnotallowed);
-    }
-  }
+ if (!msg.author.bot) {
   if (msg.content.startsWith(c.prefix)) {
     if (msg.content === c.prefix + "help") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
