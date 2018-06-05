@@ -37,8 +37,8 @@ client.on('ready', () => {
   interval = client.setInterval(function() {
     logger.info("Executing Interval function");
     client.channels.get("449621199966830633").send(":white_check_mark: OK :ok_hand:");
-  }, 3600000);
-  logger.info("Interval Initialized.");
+  }, 1800000);
+  logger.info("Interval Initialized.(every 30 minutes!)");
   console.log("Interval Initialized.");
   logger.info("ChatBot has Fully startup.");
   console.log("ChatBot has Fully startup.");
