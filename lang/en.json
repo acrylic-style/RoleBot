@@ -19,5 +19,6 @@
   "atmpfs": "┗━ Attempting force shutdown by {0}",
   "bye": ":wave: Bye!",
   "atnotallowed": "Not allowed `@`.",
-  "members": "This guild has {0} members."
+  "members": "This guild has {0} members.",
+  "fetched": "Fetched Messages and Members."
 }

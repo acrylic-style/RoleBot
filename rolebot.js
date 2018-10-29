@@ -3,61 +3,70 @@ const f =require('string-format');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const s = require('./secret.json');
-const c = require('./config.json');
+const path = require('path');
+var c = require('./config.json');
 const lang = require('./lang/' + c.lang + '.json');
 var fs = require('fs');
 var process = require('process');
 var log = new require('log');
 var logger = null;
-var interval = null;
 
-  /*fs.stat('lock', function(err, stat) {
-    if(err == null) {
-      // file exists, do something (or die)
-      console.log("Lock file found, can't run the bot.");
-      process.exit();
-    }
-  });*/
 client.on('ready', () => {
   logger = new log('info', fs.createWriteStream('latest.log', 'utf-8'));
   logger.info("Logged in as %s(%s)!", client.user.tag, client.token);
   console.log(`Logged in as ${client.user.tag}(Token:${client.token})!`);
-  fs.open('lock', 'w', function (err, file) {
-    if (err) throw err;
-    logger.info("Created lock file");
-    console.log("Created lock file");
-  });
-  fs.writeFile('lock', process.pid, function(err) {
-  if (err) throw err;
-  logger.info("Saved lock file");
-  console.log("Saved lock file");
-  });
-  client.user.setActivity("Help => " + c.prefix + "help");
-  client.channels.get("450171632024289282").send(":ok_hand: 1 get :exclamation:");
-  interval = client.setInterval(function() {
-    logger.info("Executing Interval function");
-    client.channels.get("449621199966830633").send(":white_check_mark: OK :ok_hand:");
-  }, 1800000);
-  logger.info("Interval Initialized.(every 30 minutes!)");
-  console.log("Interval Initialized.");
-  logger.info("ChatBot has Fully startup.");
-  console.log("ChatBot has Fully startup.");
+  client.user.setActivity(c.prefix + "help");
+  logger.info("Bot has Fully startup.");
+  console.log("Bot has Fully startup.");
 });
 
-function addRole(msg, rolename) {
+function addRole(msg, rolename, isCommand = true) {
       var role = null;
       var member = null;
       try {
         role = msg.guild.roles.find("name", rolename);
         member = msg.guild.members.get(msg.author.id);
-        if (msg.member.roles.has(role.id)) {
-          member.removeRole(role).catch(console.error);
-          let embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + rolename + "] から削除しました。");
-          msg.channel.send(embed);
+        if (isCommand) {
+          if (msg.member.roles.has(role.id)) {
+            member.removeRole(role).catch(console.error);
+            let embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + rolename + "] から削除しました。");
+            msg.channel.send(embed);
+          } else {
+            member.addRole(role).catch(console.error);
+            let embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + rolename + "] へ追加しました。");
+            msg.channel.send(embed);
+          }
         } else {
-          member.addRole(role).catch(console.error);
-          let embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + rolename + "] へ追加しました。");
-          msg.channel.send(embed);
+            member.addRole(role).catch(console.error);
+            console.log(`added role: ${role.name}`);
+        }
+      } catch (e) {
+        console.error("Caught exception: " + e);
+        console.error(e.stack);
+        logger.error("Caught exception! " + e);
+        logger.error(e.stack);
+      }
+}
+
+function removeRole(msg, rolename, isCommand = true) {
+      var role = null;
+      var member = null;
+      try {
+        role = msg.guild.roles.find("name", rolename);
+        member = msg.guild.members.get(msg.author.id);
+        if (isCommand) {
+          if (msg.member.roles.has(role.id)) {
+            member.removeRole(role).catch(console.error);
+            let embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + rolename + "] から削除しました。");
+            msg.channel.send(embed);
+          } else {
+            member.addRole(role).catch(console.error);
+            let embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + rolename + "] へ追加しました。");
+            msg.channel.send(embed);
+          }
+        } else {
+            member.removeRole(role).catch(console.error);
+            console.log(`removed role: ${role.name}`);
         }
       } catch (e) {
         msg.channel.send(":x: エラー: " + e);
@@ -87,21 +96,29 @@ client.on('message', msg => {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       addRole(msg, "ps4");
-    } else if (msg.content.startsWith(c.prefix + "xbox")) {
+    } else if (msg.content === c.prefix + "switch") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "xbox");
-    } else if (msg.content === c.prefix + "ios") {
+      addRole(msg, "switch");
+    } else if (msg.content === c.prefix + "kyoka" || msg.content === c.prefix + "許可") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "ios");
+      addRole(msg, "許可");
+    } else if (msg.content === c.prefix + "stw" || msg.content === c.prefix + "世界を救え" || msg.content === c.prefix + "set-stw") {
+      logger.info("%s issued command: %s", msg.author.tag, msg.content);
+      console.log(f(lang.issueduser, msg.author.tag, msg.content));
+      addRole(msg, "世界を救う人たち");
+    } else if (msg.content === c.prefix + "ios" || msg.content === c.prefix + "mobile" || msg.content === c.prefix + "スマホ") {
+      logger.info("%s issued command: %s", msg.author.tag, msg.content);
+      console.log(f(lang.issueduser, msg.author.tag, msg.content));
+      addRole(msg, "スマホ");
     } else if (msg.content.startsWith(c.prefix + "roles")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       let embed = new Discord.RichEmbed()
         .setTitle(":fork_and_knife: 機種割り当て")
         .setColor([3,255,255])
-        .setDescription(f(" PC: `{0}pc`\n PS4: `{0}ps4`\n Xbox: `{0}xbox`\n iOS(Mobile): `{0}ios`", c.prefix));
+        .setDescription(f(" PC: `{0}pc`\n PS4: `{0}ps4`\n Xbox: `{0}xbox`\n スマホ: `{0}スマホ`\n 世界を救え: `{0}stw`", c.prefix));
       msg.channel.send(embed);
     } else if (msg.content.startsWith(c.prefix + "load")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
@@ -114,7 +131,7 @@ client.on('message', msg => {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
         if (msg.author != "<@445996883761037323>") {
-          var commandcut = msg.content.substr("!say ".length); //cut "!bot " off of the start of the command
+          var commandcut = msg.content.substr(c.prefix + "say ".length); //cut "!bot " off of the start of the command
           var message = ""; //create message variable
           var argumentarray = commandcut.split(" "); // split array by "," characters
           argumentarray.forEach(function(element) { // foreach argument given
@@ -144,6 +161,17 @@ client.on('message', msg => {
       logger.info("%s issued admin command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issuedadmin, msg.author.tag, msg.content));
       msg.channel.send(f(lang.adminhelp, c.aprefix, c.prefix));
+    } else if (msg.content === c.aprefix + "reload") {
+      delete require.cache[path.resolve('./config.json')];
+      c = require('./config.json');
+      msg.channel.send(":ok_hand:");
+    } else if (msg.content === c.aprefix + "fetch") {
+      async function fetch() {
+        msg.delete(0);
+        await msg.channel.fetchMessages();
+        await msg.guild.fetchMembers();
+      }
+      fetch();
     } else if (msg.content.startsWith(c.aprefix + "shutdown")) {
       logger.info("┏━ Processing Admin command: %s By %s(%s)", msg.content, msg.author, msg.author.tag);
       console.log(f(lang.processing_cmd, msg.content, msg.author, msg.author.tag));
@@ -151,24 +179,12 @@ client.on('message', msg => {
       const args = msg.content.slice(c.aprefix + "shutdown".length).trim().split(/ +/g);
         if(args[0] == "-f") {
           logger.info("┗━ Attempting Force Shutdown by %s", msg.author.tag);
-          client.clearInterval(interval);
           console.log(f(lang.atmpfs, msg.author.tag));
-          fs.unlink('lock', function (err) {
-            if (err) throw err;
-            console.log("Deleted lock file, Bye!");
-            logger.info("Deleted lock file, Bye!");
-          });
           msg.channel.send(lang.bye);
           client.destroy();
         } else {
           logger.info("┗━ Successfully execution of command, shutting down: %s", msg.content);
-          client.clearInterval(interval);
           console.log(f(lang.success, msg.content));
-          fs.unlink('lock', function (err) {
-            if (err) throw err;
-            logger.info("Deleted lock file, Bye!");
-            console.log("Deleted lock file.");
-          });
           msg.channel.send(lang.bye);
           client.destroy();
         }
@@ -177,8 +193,8 @@ client.on('message', msg => {
         logger.info("┗━ Failed execution because User do not match. %s", msg.content);
         console.log(f(lang.failednotmatch, msg.content));
       }
-    } else if(msg.content === c.aprefix + "token") {
-      if(msg.member.roles.find("name", "TNT") || msg.member.roles.find("name", "Admin") || msg.author == "<@254794124744458241>") {
+    } else if (msg.content === c.aprefix + "token") {
+      if (msg.author.id == "254794124744458241") {
         msg.author.send(f(lang.mytoken, client.token, s.inviteme));
         msg.reply(lang.senttodm);
         logger.info("%s issued admin command: %s", msg.author.tag, msg.content);
@@ -192,59 +208,57 @@ client.on('message', msg => {
         logger.info("%s issued failed admin command(%s): %s", msg.author.tag, msg.content, "Doesn't have permission");
         console.log(f(lang.issuedfailadmin, msg.author.tag, msg.content, "Doesn't have Admin Role"));
       }
-  /*} else if (msg.content.startsWith(c.aprefix + "ban")) {
-      console.log(f(lang.issuedadmin, msg.author.tag, msg.content));
-      const args = msg.content.slice(c.aprefix + "ban".length).trim().split(/ +/g);
-      if(args[0] == ";ban") {
-        msg.channel.send(":x: Arguments are missing.");
-      } else {
-        if(msg.guild.available) {
-          msg.guild.ban(args[0], { reason: args[1] });
-          client.channels.get("428163318415622154").send(":x: Banned " + args[0] + ".\nReason: " + args[1]);
-          msg.channel.send(":x: Banned " + args[0] + ".\nReason: " + args[1]);
-        }
-      }*/
     }
   }
  }
 });
 
+client.on("messageReactionAdd", (reaction, user) => {
+  console.log(`Reaction added: ${reaction.emoji.name} (${reaction.emoji.id})  by ${reaction.message.author.id}`);
+  if (reaction.message.id == c.messageId || reaction.message.id == c.messageId2) {
+    if (reaction.emoji.id == "460107727235055626") {
+      addRole(reaction.message, "pc", false);
+    }
+    if (reaction.emoji.id == "460108080642785281") {
+      addRole(reaction.message, "switch", false);
+    }
+    if (reaction.emoji.id == "460107911595819038") {
+      addRole(reaction.message, "ps4", false);
+    }
+    if (reaction.emoji.id == "460108080458498079") {
+      addRole(reaction.message, "スマホ", false);
+    }
+    if (reaction.emoji.id == "460328322153447444") {
+      addRole(reaction.message, "許可", false);
+    }
+    if (reaction.emoji.id == "aaaaaaaa") {
+      addRole(reaction.message, "世界を救う人たち", false)
+    }
+  }
+});
+
+client.on("messageReactionRemove", (reaction, user) => {
+  console.log(`Reaction removed: ${reaction.emoji.name} (${reaction.emoji.id}) by ${reaction.message.author.id}`);
+  if (reaction.message.id == c.messageId || reaction.message.id == c.messageId2) {
+    if (reaction.emoji.id == "460107727235055626") {
+      removeRole(reaction.message, "pc", false);
+    }
+    if (reaction.emoji.id == "460108080642785281") {
+      removeRole(reaction.message, "switch", false);
+    }
+    if (reaction.emoji.id == "460107911595819038") {
+      removeRole(reaction.message, "ps4", false);
+    }
+    if (reaction.emoji.id == "460108080458498079") {
+      removeRole(reaction.message, "スマホ", false);
+    }
+    if (reaction.emoji.id == "460328322153447444") {
+      removeRole(reaction.message, "許可", false);
+    }
+    if (reaction.emoji.id == "aaaaaaaaaaaaaaaa") {
+      removeRole(reaction.message, "世界を救う人たち", false)
+    }
+  }
+});
 
 client.login(s.token);
-
-process.on('SIGINT', function() {
-    client.clearInterval(interval);
-    client.user.setAFK(true);
-    fs.unlink('lock', function (err) {
-    if (err) throw err;
-    logger.info("Deleted lock file, Bye!");
-    console.log("Deleted lock file.");
-    });
-    client.channels.get("449621199966830633").send(":skull: SIGINTで詰みました。おい、 <@254794124744458241> 、わざとやっただろ！");
-    client.user.setActivity("Bot is down: Received SIGINT");
-    logger.emergency("Caught interrupt signal, shutting down.");
-    console.log("Caught interrupt signal, shutdown.");
-    if (client.destroy()) {
-        process.exit();
-    }
-});
-
-process.on('uncaughtException', function(err) {
-  client.clearInterval(interval);
-  client.user.setAFK(true);
-  client.user.setActivity("Bot is down due to errors.");
-    fs.unlink('lock', function (err) {
-    if (err) throw err;
-    logger.info("Deleted lock file. See errors.");
-    console.log("Deleted lock file.");
-    });
-  var e = {};
-  Error.captureStackTrace(e);
-  logger.alert("Caught exception: " + err);
-  logger.alert(e.stack);
-  console.log('Caught exception: ' + err);
-  console.log(e.stack);
-  client.channels.get("449621199966830633").send(":skull: エラーにより故障中。<@254794124744458241> によって仕組まれたバグだ！", {files: ["https://img.rht0910.tk/bug.png"]});
-  client.destroy();
-  process.exit();
-});
