@@ -1,0 +1,27 @@
+{
+  "token": "",
+  "inviteme": "https://discordapp.com/api/oauth2/authorize?client_id=<<<CLIENT ID>>>&permissions=8&scope=bot",
+  "prefix": ".",
+  "aprefix": ",",
+  "lang": "ja",
+  "messageId": "469413595076231198",
+  "messageId2": "464223362215051277",
+  "blacklistedGID": [
+  ],
+  "blacklistedDMUID": [
+  ],
+  "emojis": {
+    "tickYes": "",
+    "tickNo": "",
+    "pc": "",
+    "switch": "",
+    "ps4": "",
+    "xbox": "",
+    "mobile": ""
+  },
+  "channels": {
+    "ad_application": "",
+    "ads": "",
+    "mod-log": ""
+  }
+}

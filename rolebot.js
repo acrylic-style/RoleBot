@@ -2,8 +2,11 @@ var os = require("os");
 const f =require('string-format');
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const s = require('./secret.json');
+const s = require('./config.json');
 const path = require('path');
+/**
+ * @type {{ token: string, inviteme: string, prefix: string, aprefix: string, lang: string, messageId: string, messageId2: string, blacklistedGID: Array<string>, blacklistedDMUID: Array<string>, emojis: { tickYes: string, tickNo: string, pc: string, switch: string, mobile: string, ps4: string, xbox: string }, channels: { ad_application: string, ads: string, 'mod-log': string }}}
+ */
 let c = require('./config.json');
 const lang = require('./lang/' + c.lang + '.json');
 let fs = require('fs');
@@ -57,7 +60,6 @@ function addRole(msg, rolename, isCommand = true) {
         logger.error(e.stack);
       }
 }
-
 function removeRole(msg, rolename, isCommand = true) {
       var role = null;
       var member = null;
@@ -103,12 +105,12 @@ client.on('message', async msg => {
     const least = 2 // do not set to zero
     const id = getRandomInt(100, 100000) // 100 to 100000
     let msgurl
-    if (!msg.content.includes("--dry-run")) msgurl = await client.channels.get("507943063662886942").send(`${msg.author.tag}から[宣伝ID:`+id+`]:\n` + "```\n" + msg.content.replace(/```/gm, "---") + "\n```\n宣伝メッセージ:```\n" + msg.content.split("```")[1] + "\n```\n\n(" + msg.createdAt + "に送信されました。)")
+    if (!msg.content.includes("--dry-run")) msgurl = await client.channels.get(c.channels['ad_application']).send(`${msg.author.tag}から[宣伝ID:`+id+`]:\n` + "```\n" + msg.content.replace(/```/gm, "---") + "\n```\n宣伝メッセージ:```\n" + msg.content.split("```")[1] + "\n```\n\n(" + msg.createdAt + "に送信されました。)")
     msg.channel.send(":ok_hand: メッセージを送信しました(Message has been sent)。 [宣伝ID: "+id+"]" + (msg.content.includes("--dry-run") ? "(--dry-runが指定済みなので送信されていません)" : "") + "\n最低" + least + "人のAdminに承認される必要があります。")
     if (msgurl) {
       try {
-        await msgurl.react(msgurl.guild.emojis.get("508125817591693314"))
-        await msgurl.react(msgurl.guild.emojis.get("508125817914523649"))
+        await msgurl.react(msgurl.guild.emojis.get(c.emojis['tickYes']))
+        await msgurl.react(msgurl.guild.emojis.get(c.emojis['tickNo']))
       } catch(e) {
         msgurl.channel.send("Something went wrong, Oh no!\nShowing error: " + e.stack || e)
       }
@@ -117,20 +119,20 @@ client.on('message', async msg => {
     ids[id] = { status: "pending", "url": url, "note": "(none)", "by": msg.author.name, "avatarURL": msg.author.avatarURL }
     if (msg.content.includes("--dry-run")) ids[id].note = "Generated with dry-run option. Do not approve.";
     handlers[msgurl.id] = async (eid) => {
-      if (eid === "508125817591693314") {
+      if (eid === c.emojis['tickYes']) {
         approves[msgurl.id] = (typeof approves[msgurl.id] !== "undefined" ? approves[msgurl.id] + 1 : 1)
         if (approves[msgurl.id] >= least) {
           ids[id].status = "approved"
-          msg.client.channels.get("507943063662886942").send("<:tickyes:508125817591693314> 宣伝ID: " + id + "は承認されました！")
-          const webhook = await msg.client.channels.get("507962143694520320").createWebhook(msg.author.username, ids[id].avatarURL)
-          await webhook.send("宣伝ID:"+id+"(``.get <宣伝ID>`` <#435760734849204224> で状況を表示)\n" + (msg.content.split("```")[1] || msg.content.replace(/```/, "---")))
+          msg.client.channels.get(c.channels['ad_application']).send(msg.guild.emojis.get(c.emojis['tickYes']) + " 宣伝ID: " + id + "は承認されました！")
+          const webhook = await msg.client.channels.get(c.channels['ads']).createWebhook(msg.author.username, ids[id].avatarURL)
+          await webhook.send("宣伝ID:"+id+"(``.get <宣伝ID>`` で状況を表示)\n" + (msg.content.split("```")[1] || msg.content.replace(/```/, "---")))
           webhook.delete()
           handlers[msgurl.id] = null
           delete handlers[msgurl.id]
         }
-      } else if (eid === "508125817914523649") {
+      } else if (eid === c.emojis['tickNo']) {
         ids[id].status = "rejected"
-        msg.client.channels.get("507943063662886942").send("<:tickno:508125817914523649> 宣伝ID: " + id + "は拒否されました。")
+        msg.client.channels.get(c.channels['ad_application']).send(msg.guild.emojis.get(c.emojis['tickNo']) + " 宣伝ID: " + id + "は拒否されました。")
         handlers[msgurl.id] = null
         delete handlers[msgurl.id]
       }
@@ -175,7 +177,7 @@ client.on('message', async msg => {
     } else if (msg.content === c.prefix + "stw" || msg.content === c.prefix + "世界を救え" || msg.content === c.prefix + "set-stw") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "id:506438376539553802");
+      addRole(msg, "世界を救う者");
     } else if (msg.content === c.prefix + "ios" || msg.content === c.prefix + "mobile" || msg.content === c.prefix + "スマホ") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
@@ -242,33 +244,29 @@ client.on('message', async msg => {
     } else if (msg.content.startsWith(c.prefix + "say ")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
-        if (msg.author != "<@445996883761037323>") {
-          var commandcut = msg.content.substr(c.prefix + "say ".length); //cut "!bot " off of the start of the command
-          var message = ""; //create message variable
-          var argumentarray = commandcut.split(" "); // split array by "," characters
-          argumentarray.forEach(function(element) { // foreach argument given
-              message += element + " "; // add argument and space to message
-          }, this);
-          msg.channel.send(message);
-        }
+      const commandcut = msg.content.substr(c.prefix + "say ".length);
+      let message = "";
+      const argumentarray = commandcut.split(" ");
+      argumentarray.forEach(function(element) {
+        message += element + " ";
+      }, this);
+      msg.channel.send(message);
     } else if (msg.content.startsWith(c.prefix + "sayd ")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
-        if (msg.author != "<@445996883761037323>") {
-          var commandcut = msg.content.substr("!sayd ".length); //cut "!bot " off of the start of the command
-          var message = ""; //create message variable
-          var argumentarray = commandcut.split(" "); // split array by "," characters
-          argumentarray.forEach(function(element) { // foreach argument given
-              message += element + " "; // add argument and space to message
-          }, this);
-          msg.delete(0).catch(function (error) { msg.channel.send(":no_good: Missing permission: 'manage message'"); console.error("Error: missing 'manage message' permission."); logger.alert("Error: missing 'manage message' permission."); });
-          msg.channel.send(message);
-        }
+      const commandcut = msg.content.substr(c.prefix + "say ".length);
+      let message = "";
+      const argumentarray = commandcut.split(" ");
+      argumentarray.forEach(function(element) {
+        message += element + " ";
+      }, this);
+      msg.delete(0).catch(function (error) { msg.channel.send(":no_good: Missing permission: 'manage message'"); console.error("Error: missing 'manage message' permission."); logger.alert("Error: missing 'manage message' permission."); });
+      msg.channel.send(message);
     }
   }
  }
  if (msg.author != "<@445996883761037323>") {
-  if (msg.content.startsWith(c.aprefix)) {
+  if (msg.content.startsWith(c.aprefix) && msg.member.hasPermission(8)) {
     if (msg.content === c.aprefix + "help") {
       logger.info("%s issued admin command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issuedadmin, msg.author.tag, msg.content));
@@ -289,7 +287,7 @@ client.on('message', async msg => {
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
       const user = msg.client.users.get(args[1])
       const message = `
-${msg.client.guilds.get("434647832067178496").name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されました。
+${msg.guild.name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されました。
 
 次回以降からは**キック**、もしくは**BAN**の対象となりますので、そのような行動は控えるようにしてください。
 
@@ -303,7 +301,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
+      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
@@ -317,7 +315,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
       const user = msg.client.users.get(args[1])
       const message = `
-${msg.client.guilds.get("434647832067178496").name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されたので、サーバーから**BAN**されました。
+${msg.guild.name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されたので、サーバーから**BAN**されました。
 
 心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください(BAN実行者: ${msg.author})。
 `;
@@ -329,7 +327,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
+      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
@@ -344,7 +342,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
       const user = msg.client.users.get(args[1])
       const message = `
-${msg.client.guilds.get("434647832067178496").name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されたので、サーバーから**キック**されました。
+${msg.guild.name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されたので、サーバーから**キック**されました。
 
 心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください(BAN実行者: ${msg.author})。
 `;
@@ -356,7 +354,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
+      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
@@ -430,6 +428,7 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
       msg.channel.send(embed)
     } else if (msg.content === c.aprefix + "reload") {
       delete require.cache[path.resolve('./config.json')];
+      delete require.cache['./config.json'];
       c = require('./config.json');
       msg.channel.send(":ok_hand:");
     } else if (msg.content === c.aprefix + "fetch") {
@@ -439,68 +438,28 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
         await msg.guild.fetchMembers();
       }
       fetch();
-    } else if (msg.content.startsWith(c.aprefix + "shutdown")) {
-      logger.info("┏━ Processing Admin command: %s By %s(%s)", msg.content, msg.author, msg.author.tag);
-      console.log(f(lang.processing_cmd, msg.content, msg.author, msg.author.tag));
-      if(msg.author == "<@254794124744458241>") {
-      const args = msg.content.slice(c.aprefix + "shutdown".length).trim().split(/ +/g);
-        if(args[0] == "-f") {
-          logger.info("┗━ Attempting Force Shutdown by %s", msg.author.tag);
-          console.log(f(lang.atmpfs, msg.author.tag));
-          msg.channel.send(lang.bye);
-          client.destroy();
-        } else {
-          logger.info("┗━ Successfully execution of command, shutting down: %s", msg.content);
-          console.log(f(lang.success, msg.content));
-          msg.channel.send(lang.bye);
-          client.destroy();
-        }
-      } else {
-        msg.reply(lang.noperm);
-        logger.info("┗━ Failed execution because User do not match. %s", msg.content);
-        console.log(f(lang.failednotmatch, msg.content));
-      }
-    } else if (msg.content === c.aprefix + "token") {
-      if (msg.author.id == "254794124744458241") {
-        msg.author.send(f(lang.mytoken, client.token, s.inviteme));
-        msg.reply(lang.senttodm);
-        logger.info("%s issued admin command: %s", msg.author.tag, msg.content);
-        console.log(f(lang.issuedadmin, msg.author.tag, msg.content));
-        var embed = new Discord.RichEmbed();
-        embed.description = "You'll need to add permission - 'Manage Messages' => 'Save Changes'";
-        embed.setColor([255, 0, 0]);
-        msg.delete(5000).catch(function (error) { msg.channel.send(":no_good: Missing permission: 'manage message'", embed); console.error("Error: missing 'manage message' permission."); logger.alert("Error: missing 'manage message' permission."); });
-      } else {
-        msg.reply(lang.youdonthavear);
-        logger.info("%s issued failed admin command(%s): %s", msg.author.tag, msg.content, "Doesn't have permission");
-        console.log(f(lang.issuedfailadmin, msg.author.tag, msg.content, "Doesn't have Admin Role"));
-      }
     }
   }
  }
 });
 
 client.on("messageReactionAdd", (reaction, user) => {
-  console.log(`Reaction added: ${reaction.emoji.name} (${reaction.emoji.id})  by ${reaction.message.author.id}`);
   if (user.bot) return;
   if (reaction.message.id == c.messageId || reaction.message.id == c.messageId2) {
-    if (reaction.emoji.id == "460107727235055626") {
+    if (reaction.emoji.id === c.emojis['pc']) {
       addRole(reaction.message, "pc", false);
     }
-    if (reaction.emoji.id == "460108080642785281") {
+    if (reaction.emoji.id === c.emojis['switch']) {
       addRole(reaction.message, "switch", false);
     }
-    if (reaction.emoji.id == "460107911595819038") {
+    if (reaction.emoji.id === c.emojis['ps4']) {
       addRole(reaction.message, "ps4", false);
     }
-    if (reaction.emoji.id == "460108080458498079") {
+    if (reaction.emoji.id === c.emojis['mobile']) {
       addRole(reaction.message, "スマホ", false);
     }
-    if (reaction.emoji.id == "460328322153447444") {
+    if (reaction.emoji.id === "460328322153447444") {
       addRole(reaction.message, "許可", false);
-    }
-    if (reaction.emoji.id == "aaaaaaaa") {
-      addRole(reaction.message, "id:506438376539553802", false)
     }
   }
   try {
@@ -509,26 +468,22 @@ client.on("messageReactionAdd", (reaction, user) => {
 });
 
 client.on("messageReactionRemove", (reaction, user) => {
-  console.log(`Reaction removed: ${reaction.emoji.name} (${reaction.emoji.id}) by ${reaction.message.author.id}`);
   if (user.bot) return;
   if (reaction.message.id == c.messageId || reaction.message.id == c.messageId2) {
-    if (reaction.emoji.id == "460107727235055626") {
+    if (reaction.emoji.id === c.emojis['pc']) {
       removeRole(reaction.message, "pc", false);
     }
-    if (reaction.emoji.id == "460108080642785281") {
+    if (reaction.emoji.id === c.emojis['switch']) {
       removeRole(reaction.message, "switch", false);
     }
-    if (reaction.emoji.id == "460107911595819038") {
+    if (reaction.emoji.id === c.emojis['ps4']) {
       removeRole(reaction.message, "ps4", false);
     }
-    if (reaction.emoji.id == "460108080458498079") {
+    if (reaction.emoji.id === c.emojis['mobile']) {
       removeRole(reaction.message, "スマホ", false);
     }
     if (reaction.emoji.id == "460328322153447444") {
       removeRole(reaction.message, "許可", false);
-    }
-    if (reaction.emoji.id == "aaaaaaaaaaaaaaaa") {
-      removeRole(reaction.message, "id:506438376539553802", false)
     }
   }
 });
