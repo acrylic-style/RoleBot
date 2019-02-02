@@ -99,6 +99,7 @@ client.on('message', async msg => {
     }
   }
  }
+ const random = getRandomInt(100, 100000)
  if (!msg.author.bot) {
  if (msg.channel.constructor.name === "DMChannel" || msg.channel.constructor.name === "GroupDMChannel") {
     if (c.blacklistedDMUID.includes(msg.author.id)) return true;
@@ -140,7 +141,6 @@ client.on('message', async msg => {
     }
     return true
  }
- const random = getRandomInt(100, 100000)
   if (msg.content.startsWith(c.prefix)) {
     if (msg.content === c.prefix + "help") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
