@@ -88,8 +88,18 @@ function removeRole(msg, rolename, isCommand = true) {
 }
 
 client.on('message', async msg => {
+ const invite = /discord\.gg\/(.......)/.exec(msg.content)
+ if (invite) {
+  if (invite[1]) {
+    if (c.blacklistedGID.includes((await client.fetchInvite(invite[1])).guild.id)) {
+      msg.delete();
+      return true;
+    }
+  }
+ }
  if (!msg.author.bot) {
  if (msg.channel.constructor.name === "DMChannel" || msg.channel.constructor.name === "GroupDMChannel") {
+    if (c.blacklistedDMUID.includes(msg.author.id)) return true;
     const least = 2 // do not set to zero
     const id = getRandomInt(100, 100000) // 100 to 100000
     let msgurl
@@ -133,6 +143,14 @@ client.on('message', async msg => {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       msg.channel.send(f(lang.userhelp, c.prefix, c.aprefix));
+    } else if (msg.content.startsWith(c.prefix + "remindme ")) {
+      logger.info("%s issued command: %s", msg.author.tag, msg.content);
+      console.log(f(lang.issueduser, msg.author.tag, msg.content));
+      const args = msg.content.replace(c.prefix, "").split(" ")
+      setTimeout(async () => {
+        msg.reply(args[1])
+      }, parseInt(args[2]) * 60 * 1000)
+      msg.channel.send(":ok_hand:")
     } else if (msg.content === c.prefix + "members") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
