@@ -99,7 +99,6 @@ client.on('message', async msg => {
     }
   }
  }
- const random = getRandomInt(100, 100000)
  if (!msg.author.bot) {
  if (msg.channel.constructor.name === "DMChannel" || msg.channel.constructor.name === "GroupDMChannel") {
     if (c.blacklistedDMUID.includes(msg.author.id)) return true;
@@ -277,9 +276,10 @@ client.on('message', async msg => {
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[2]) return msg.channel.send("引数を指定してください。(<<該当するメッセージID> <理由>>)")
       if (!Object.keys(cases).includes(args[1])) return msg.channel.send("引数が正しくありません。")
-      cases[args[1]].reason = args[2];
+      cases[args[1]].reason = args.slice(2).join(' ');
       msg.channel.send(":white_check_mark: reasonを設定しました")
     } else if (msg.content.startsWith(c.aprefix + "warn") || msg.content.startsWith(c.aprefix + "warning")) {
+      const random = getRandomInt(100, 100000)
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
@@ -295,9 +295,9 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
 `;
       cases[random] = {
         type: "警告",
-        message: args[3] || message,
+        message: message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
+        reason: args.slice(2).join(' ') || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
@@ -308,6 +308,7 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .addField("理由", cases[random].reason)
         .setColor([255,255,0]))
     } else if (msg.content.startsWith(c.aprefix + "ban")) {
+      const random = getRandomInt(100, 100000)
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
@@ -321,9 +322,9 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
 `;
       cases[random] = {
         type: "BAN",
-        message: args[3] || message,
+        message: message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
+        reason: args.slice(2).join(' ') || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
@@ -335,6 +336,7 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .setColor([255,0,0]))
       msg.guild.members.get(args[1]).ban(cases[random].reason)
     } else if (msg.content.startsWith(c.aprefix + "kick")) {
+      const random = getRandomInt(100, 100000)
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
@@ -348,9 +350,9 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
 `;
       cases[random] = {
         type: "キック",
-        message: args[3] || message,
+        message: message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
+        reason: args.slice(2).join(' ') || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
