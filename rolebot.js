@@ -300,12 +300,12 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
+      msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
-        .addField("理由", cases[msg.id].reason)
+        .addField("理由", cases[random].reason)
         .setColor([255,255,0]))
     } else if (msg.content.startsWith(c.aprefix + "ban")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
@@ -326,14 +326,14 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
+      msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
-        .addField("理由", cases[msg.id].reason)
+        .addField("理由", cases[random].reason)
         .setColor([255,0,0]))
-      msg.guild.members.get(args[1]).ban(cases[msg.id].reason)
+      msg.guild.members.get(args[1]).ban(cases[random].reason)
     } else if (msg.content.startsWith(c.aprefix + "kick")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
@@ -353,14 +353,14 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
+      msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
-        .addField("理由", cases[msg.id].reason)
+        .addField("理由", cases[random].reason)
         .setColor([255,0,0]))
-      msg.guild.members.get(args[1]).ban(cases[msg.id].reason)
+      msg.guild.members.get(args[1]).ban(cases[random].reason)
     } else if (msg.content.startsWith(c.aprefix + "setstatus")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
