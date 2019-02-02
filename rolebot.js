@@ -10,10 +10,10 @@ let fs = require('fs');
 let process = require('process');
 let log = new require('log');
 let logger = null;
-const cases = {}
+const cases = JSON.parse(fs.readFileSync('./data/cases.json'))
 const handlers = {}
 const approves = {}
-const ids = {}
+const ids = JSON.parse(fs.readFileSync('./data/ads.json'))
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -138,6 +138,7 @@ client.on('message', async msg => {
     }
     return true
  }
+ const random = getRandomInt(100, 100000)
   if (msg.content.startsWith(c.prefix)) {
     if (msg.content === c.prefix + "help") {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
@@ -294,16 +295,16 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
 
 心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください。
 `;
-      cases[msg.id] = {
+      cases[random] = {
         type: "警告",
         message: args[3] || message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+msg.id+" [理由]` を実行してください"),
+        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[msg.id].reason}`)
+      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
-        .setTitle(`${cases[msg.id].type} | Case #${msg.id}`)
+        .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
         .addField("理由", cases[msg.id].reason)
@@ -320,16 +321,16 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
 
 心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください(BAN実行者: ${msg.author})。
 `;
-      cases[msg.id] = {
+      cases[random] = {
         type: "BAN",
         message: args[3] || message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+msg.id+" [理由]` を実行してください"),
+        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[msg.id].reason}`)
+      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
-        .setTitle(`${cases[msg.id].type} | Case #${msg.id}`)
+        .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
         .addField("理由", cases[msg.id].reason)
@@ -347,16 +348,16 @@ ${msg.client.guilds.get("434647832067178496").name}サーバーのルール違�
 
 心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください(BAN実行者: ${msg.author})。
 `;
-      cases[msg.id] = {
+      cases[random] = {
         type: "キック",
         message: args[3] || message,
         user: args[1],
-        reason: args[2] || ("Admin: `,reason "+msg.id+" [理由]` を実行してください"),
+        reason: args[2] || ("Admin: `,reason "+random+" [理由]` を実行してください"),
         moderator: msg.author.id,
       };
-      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[msg.id].reason}`)
+      msg.client.users.get(args[1]).send(cases[msg.id].message+`\n\n理由: ${cases[random].reason}`)
       msg.guild.channels.get("530383277769621504").send(new Discord.RichEmbed()
-        .setTitle(`${cases[msg.id].type} | Case #${msg.id}`)
+        .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
         .addField("理由", cases[msg.id].reason)
@@ -533,3 +534,11 @@ client.on("messageReactionRemove", (reaction, user) => {
 });
 
 client.login(s.token);
+
+fs.writeFileSync('./data/cases.json', JSON.stringify(cases))
+fs.writeFileSync('./data/ads.json', JSON.stringify(ids))
+
+setInterval(() => {
+  fs.writeFileSync('./data/cases.json', JSON.stringify(cases))
+  fs.writeFileSync('./data/ads.json', JSON.stringify(ids))
+}, 60 * 1000)
