@@ -17,6 +17,7 @@ const cases = JSON.parse(fs.readFileSync('./data/cases.json'))
 const handlers = {}
 const approves = {}
 const ids = JSON.parse(fs.readFileSync('./data/ads.json'))
+const mutes = require('./data/mutes.json') // { serverID: { userID: { user: userID(for Object.values), expires: number, ... } } }
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -233,13 +234,14 @@ client.on('message', async msg => {
       if (!Object.keys(cases).includes(args[1])) return msg.channel.send("引数が正しくありません。")
       const user = msg.client.users.get(cases[args[1]].user)
       const mod = msg.client.users.get(cases[args[1]].moderator)
-      msg.channel.send(new Discord.RichEmbed()
+      const embed = new Discord.RichEmbed()
         .setTitle(`${cases[args[1]].type} | Case #${args[1]}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", mod.tag, true)
         .addField("理由", cases[args[1]].reason)
         .setDescription("メッセージ: ```"+cases[args[1]].message+"```")
-        .setColor([255,0,0]))
+        .setColor([255,0,0])
+      msg.channel.send(embed)
     } else if (msg.content.startsWith(c.prefix + "say ")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
@@ -301,7 +303,7 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
+      msg.guild.channels.find(channel => channel.name === 'mod-log').send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
@@ -328,7 +330,7 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
+      msg.guild.channels.find(channel => channel.name === 'mod-log').send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
@@ -356,13 +358,43 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         moderator: msg.author.id,
       };
       msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
-      msg.guild.channels.get(c.channels['mod-log']).send(new Discord.RichEmbed()
+      msg.guild.channels.find(channel => channel.name === 'mod-log').send(new Discord.RichEmbed()
         .setTitle(`${cases[random].type} | Case #${random}`)
         .addField("ユーザー", `${user.tag} (${user})`, true)
         .addField("モデレーター", msg.author.tag, true)
         .addField("理由", cases[random].reason)
         .setColor([255,0,0]))
       msg.guild.members.get(args[1]).ban(cases[random].reason)
+    } else if (msg.content.startsWith(c.aprefix + "mute")) {
+      msg.channel.send('Oh no!\nThis command isn\'t implemented yet...')
+      /*const random = getRandomInt(100, 100000)
+      logger.info("%s issued command: %s", msg.author.tag, msg.content);
+      console.log(f(lang.issueduser, msg.author.tag, msg.content));
+      const args = msg.content.replace(c.aprefix, "").split(" ")
+      if (!args[1]) return msg.channel.send("引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)")
+      if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
+      const user = msg.client.users.get(args[1])
+      const message = `
+${msg.guild.name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されたので、サーバーから**キック**されました。
+
+心当たりがない方は、Admin、もしくはOwnerまでお問い合わせください(BAN実行者: ${msg.author})。
+`;
+      cases[random] = {
+        type: "キック",
+        message: message,
+        user: args[1],
+        reason: args.slice(2).join(' ') || ("Admin: `,reason "+random+" [理由]` を実行してください"),
+        moderator: msg.author.id,
+      };
+      msg.client.users.get(args[1]).send(cases[random].message+`\n\n理由: ${cases[random].reason}`)
+      const embed = new Discord.RichEmbed()
+        .setTitle(`${cases[random].type} | Case #${random}`)
+        .addField("ユーザー", `${user.tag} (${user})`, true)
+        .addField("モデレーター", msg.author.tag, true)
+        .addField("理由", cases[random].reason)
+        .setColor([255,0,0])
+      msg.guild.channels.find(channel => channel.name === 'mod-log').send(embed)
+      msg.guild.members.get(args[1]).ban(cases[random].reason)*/
     } else if (msg.content.startsWith(c.aprefix + "setstatus")) {
       logger.info("%s issued command: %s", msg.author.tag, msg.content);
       console.log(f(lang.issueduser, msg.author.tag, msg.content));
