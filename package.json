@@ -1,0 +1,25 @@
+{
+  "name": "rolebot",
+  "version": "1.0.0",
+  "description": "Discord automatic role addition by command",
+  "main": "rolebot.js",
+  "dependencies": {
+    "bot-framework": "github:acrylic-style/bot-framework",
+    "logger.js": "github:acrylic-style/logger.js",
+    "simple-git": "^1.113.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acrylic-style/RoleBot.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/acrylic-style/RoleBot/issues"
+  },
+  "homepage": "https://github.com/acrylic-style/RoleBot#readme"
+}

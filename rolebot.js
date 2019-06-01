@@ -11,12 +11,14 @@ let c = require('./config.json');
 const lang = require('./lang/' + c.lang + '.json');
 let fs = require('fs');
 let process = require('process');
-let log = new require('log');
-let logger = null;
+const { LoggerFactory } = require('logger.js')
+const logger = LoggerFactory.getLogger('client', 'purple');
 const cases = JSON.parse(fs.readFileSync('./data/cases.json'))
+const { dispatcher } = require('bot-framework/dispatcher')
 const handlers = {}
 const approves = {}
-const ids = JSON.parse(fs.readFileSync('./data/ads.json'))
+const approvedguilds = require('./data/approvedguilds.json')
+const ids = require('./data/ads.json')
 const mutes = require('./data/mutes.json') // { serverID: { userID: { user: userID(for Object.values), expires: number, ... } } }
 
 function getRandomInt(min, max) {
@@ -26,37 +28,32 @@ function getRandomInt(min, max) {
 }
 
 client.on('ready', () => {
-  logger = new log('info', fs.createWriteStream('latest.log', 'utf-8'));
-  logger.info("Logged in as %s(%s)!", client.user.tag, client.token);
-  console.log(`Logged in as ${client.user.tag}(Token:${client.token})!`);
-  client.user.setActivity("[DMで宣伝許可申請] " + c.prefix + "help");
+  logger.info("Logged in as " + client.user.tag);
+  client.user.setActivity(`[DMで宣伝許可申請] | ${c.prefix}help`);
   logger.info("Bot has Fully startup.");
-  console.log("Bot has Fully startup.");
 });
 
 function addRole(msg, rolename, isCommand = true) {
-      var role = null;
-      var member = null;
+  let role
+  let member
       try {
         role = msg.guild.roles.find(r => r.name === rolename) || msg.guild.roles.get(rolename.startsWith('id:') ? rolename.replace('id:', '') : null);
         member = msg.guild.members.get(msg.author.id);
         if (isCommand) {
           if (msg.member.roles.has(role.id || rolename.replace('id:', ''))) {
-            member.removeRole(role).catch(console.error);
-            let embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + role.name + "] から削除しました。");
+            member.removeRole(role).catch(e => logger.error(e));
+            const embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + role.name + "] から削除しました。");
             msg.channel.send(embed);
           } else {
-            member.addRole(role).catch(console.error);
-            let embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + role.name + "] へ追加しました。");
+            member.addRole(role).catch(e => logger.error(e));
+            const embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + role.name + "] へ追加しました。");
             msg.channel.send(embed);
           }
         } else {
-            member.addRole(role).catch(console.error);
-            console.log(`added role: ${role.name}`);
+            member.addRole(role).catch(e => logger.error(e));
+            logger.debug(`added role: ${role.name}`);
         }
       } catch (e) {
-        console.error("Caught exception: " + e);
-        console.error(e.stack);
         logger.error("Caught exception! " + e);
         logger.error(e.stack);
       }
@@ -69,24 +66,21 @@ function removeRole(msg, rolename, isCommand = true) {
         member = msg.guild.members.get(msg.author.id);
         if (isCommand) {
           if (msg.member.roles.has(role.id)) {
-            member.removeRole(role).catch(console.error);
+            member.removeRole(role).catch(e => logger.error(e));
             let embed = new Discord.RichEmbed().setTitle(":wastebasket: ロールから削除").setColor([255,0,0]).setDescription("ロール[" + rolename + "] から削除しました。");
             msg.channel.send(embed);
           } else {
-            member.addRole(role).catch(console.error);
+            member.addRole(role).catch(e => logger.error(e));
             let embed = new Discord.RichEmbed().setTitle(":heavy_plus_sign: ロールへ追加").setColor([0,255,0]).setDescription("ロール[" + rolename + "] へ追加しました。");
             msg.channel.send(embed);
           }
         } else {
-            member.removeRole(role).catch(console.error);
-            console.log(`removed role: ${role.name}`);
+            member.removeRole(role).catch(e => logger.error(e));
+            logger.info(`removed role: ${role.name}`);
         }
       } catch (e) {
         msg.channel.send(":x: エラー: " + e);
-        console.error("Caught exception: " + e);
-        console.error(e.stack);
-        logger.error("Caught exception! " + e);
-        logger.error(e.stack);
+        logger.error("Caught error: " + e.stack || e);
       }
 }
 
@@ -94,13 +88,18 @@ client.on('message', async msg => {
  const invite = /discord\.gg\/(.......)/.exec(msg.content)
  if (invite) {
   if (invite[1]) {
-    if (c.blacklistedGID.includes((await client.fetchInvite(invite[1])).guild.id)) {
-      msg.delete();
-      return true;
+    const finvite = await client.fetchInvite(invite[1])
+    if (finvite.guild.id === msg.guild.id) return
+    if (c.blacklistedGID.includes(finvite.guild.id)) {
+      msg.delete()
+      return msg.reply('投稿された招待URLのサーバーはブラックリストに登録されています。').then(_ => _.delete(10000))
+    } else if (!approvedguilds.includes(finvite.guild.id)) {
+      msg.delete()
+      return msg.reply('投稿された招待URLはまだ承認されていないようです。\nDMを送って承認されてからもう一度お試しください。').then(_ => _.delete(10000))
     }
   }
  }
- if (!msg.author.bot) {
+ if (msg.author.bot) return
  if (msg.channel.constructor.name === "DMChannel" || msg.channel.constructor.name === "GroupDMChannel") {
     if (c.blacklistedDMUID.includes(msg.author.id)) return true;
     const least = 2 // do not set to zero
@@ -113,7 +112,7 @@ client.on('message', async msg => {
         await msgurl.react(msgurl.guild.emojis.get(c.emojis['tickYes']))
         await msgurl.react(msgurl.guild.emojis.get(c.emojis['tickNo']))
       } catch(e) {
-        msgurl.channel.send("Something went wrong, Oh no!\nShowing error: " + e.stack || e)
+        msgurl.channel.send("Something went wrong: " + e.stack || e)
       }
     }
     const url = `https://discordapp.com/channels/${msgurl.guild.id}/${msgurl.channel.id}/${msgurl.id}`
@@ -125,8 +124,9 @@ client.on('message', async msg => {
         if (approves[msgurl.id] >= least) {
           ids[id].status = "approved"
           msg.client.channels.get(c.channels['ad_application']).send(msg.guild.emojis.get(c.emojis['tickYes']) + " 宣伝ID: " + id + "は承認されました！")
+          msg.client.channels.get(c.channels['ads']).send(msg.guild.emojis.get(c.emojis['tickYes']) + " 宣伝ID: " + id + "は承認されました！")
           const webhook = await msg.client.channels.get(c.channels['ads']).createWebhook(msg.author.username, ids[id].avatarURL)
-          await webhook.send("宣伝ID:"+id+"(``.get <宣伝ID>`` で状況を表示)\n" + (msg.content.split("```")[1] || msg.content.replace(/```/, "---")))
+          await webhook.send(`宣伝ID:${id}(\`.get <宣伝ID>\` で状況を表示)\n` + (msg.content.split("```")[1] || msg.content.replace(/```/, "---")))
           webhook.delete()
           handlers[msgurl.id] = null
           delete handlers[msgurl.id]
@@ -134,58 +134,30 @@ client.on('message', async msg => {
       } else if (eid === c.emojis['tickNo']) {
         ids[id].status = "rejected"
         msg.client.channels.get(c.channels['ad_application']).send(msg.guild.emojis.get(c.emojis['tickNo']) + " 宣伝ID: " + id + "は拒否されました。")
+        msg.client.channels.get(c.channels['ads']).send(msg.guild.emojis.get(c.emojis['tickNo']) + " 宣伝ID: " + id + "は拒否されました。")
         handlers[msgurl.id] = null
         delete handlers[msgurl.id]
       }
-      return true
+      return
     }
-    return true
- }
+  } //dispatcher(msg, lang, c.prefix, ['575673035743559701'])
   if (msg.content.startsWith(c.prefix)) {
+    logger.info(`${msg.author.tag} sent command: ${msg.content}`)
     if (msg.content === c.prefix + "help") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       msg.channel.send(f(lang.userhelp, c.prefix, c.aprefix));
     } else if (msg.content.startsWith(c.prefix + "remindme ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.prefix, "").split(" ")
-      setTimeout(async () => {
-        msg.reply(args[1])
-      }, parseInt(args[2]) * 60 * 1000)
+      setTimeout(() => { msg.reply(args.slice(2)) }, parseInt(args[1]) * 60 * 1000)
       msg.channel.send(":ok_hand:")
-    } else if (msg.content === c.prefix + "members") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      msg.channel.send(f(lang.members, msg.guild.memberCount));
-    } else if (msg.content === c.prefix + "pc") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "pc");
-    } else if (msg.content === c.prefix + "ps4") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "ps4");
-    } else if (msg.content === c.prefix + "switch") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "switch");
-    } else if (msg.content === c.prefix + "kyoka" || msg.content === c.prefix + "許可") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "許可");
-    } else if (msg.content === c.prefix + "stw" || msg.content === c.prefix + "世界を救え" || msg.content === c.prefix + "set-stw") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "世界を救う者");
-    } else if (msg.content === c.prefix + "ios" || msg.content === c.prefix + "mobile" || msg.content === c.prefix + "スマホ") {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      addRole(msg, "スマホ");
-    } else if (msg.content.startsWith(c.prefix + "roles")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      let embed = new Discord.RichEmbed()
+    } else if (msg.content === c.prefix + "members") msg.channel.send(f(lang.members, msg.guild.memberCount))
+    else if (msg.content === c.prefix + "pc") addRole(msg, "pc")
+    else if (msg.content === c.prefix + "ps4") addRole(msg, "ps4")
+    else if (msg.content === c.prefix + "switch") addRole(msg, "switch")
+    else if (msg.content === c.prefix + "kyoka" || msg.content === c.prefix + "許可") addRole(msg, "許可")
+    else if (msg.content === c.prefix + "stw" || msg.content === c.prefix + "世界を救え" || msg.content === c.prefix + "set-stw") addRole(msg, "世界を救う者");
+    else if (msg.content === c.prefix + "ios" || msg.content === c.prefix + "mobile" || msg.content === c.prefix + "スマホ") addRole(msg, "スマホ");
+    else if (msg.content.startsWith(c.prefix + "roles")) {
+      const embed = new Discord.RichEmbed()
         .setTitle(":fork_and_knife: 機種割り当て")
         .setColor([3,255,255])
         .setDescription(f(`
@@ -198,16 +170,7 @@ client.on('message', async msg => {
  | PvE: \`{0}stw\`
 `, c.prefix));
       msg.channel.send(embed);
-    } else if (msg.content.startsWith(c.prefix + "load")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
-      var la1 = os.loadavg()[0];
-      var la2 = la1 * 100;
-      var loadavg = Math.round(la2) / 100;
-      msg.channel.send(f(lang.loadavg, loadavg));
     } else if (msg.content.startsWith(c.prefix + "get ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.prefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。")
       if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send("宣伝IDは数字でなければいけません。");
@@ -226,8 +189,6 @@ client.on('message', async msg => {
         .addField("注記", ids[parseInt(args[1])].note);
       msg.channel.send(embed)
     } else if (msg.content.startsWith(c.prefix + "getp ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。(<処罰Case番号>)")
       console.log(Object.keys(cases))
@@ -243,8 +204,6 @@ client.on('message', async msg => {
         .setColor([255,0,0])
       msg.channel.send(embed)
     } else if (msg.content.startsWith(c.prefix + "say ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const commandcut = msg.content.substr(c.prefix + "say ".length);
       let message = "";
       const argumentarray = commandcut.split(" ");
@@ -253,8 +212,6 @@ client.on('message', async msg => {
       }, this);
       msg.channel.send(message);
     } else if (msg.content.startsWith(c.prefix + "sayd ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const commandcut = msg.content.substr(c.prefix + "say ".length);
       let message = "";
       const argumentarray = commandcut.split(" ");
@@ -265,7 +222,6 @@ client.on('message', async msg => {
       msg.channel.send(message);
     }
   }
- }
  if (msg.author != "<@445996883761037323>") {
   if (msg.content.startsWith(c.aprefix) && msg.member.hasPermission(8)) {
     if (msg.content === c.aprefix + "help") {
@@ -273,8 +229,6 @@ client.on('message', async msg => {
       console.log(f(lang.issuedadmin, msg.author.tag, msg.content));
       msg.channel.send(f(lang.adminhelp, c.aprefix, c.prefix));
     } else if (msg.content.startsWith(c.aprefix + "reason")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[2]) return msg.channel.send("引数を指定してください。(<<該当するメッセージID> <理由>>)")
       if (!Object.keys(cases).includes(args[1])) return msg.channel.send("引数が正しくありません。")
@@ -282,8 +236,6 @@ client.on('message', async msg => {
       msg.channel.send(":white_check_mark: reasonを設定しました")
     } else if (msg.content.startsWith(c.aprefix + "warn") || msg.content.startsWith(c.aprefix + "warning")) {
       const random = getRandomInt(100, 100000)
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)")
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
@@ -311,8 +263,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .setColor([255,255,0]))
     } else if (msg.content.startsWith(c.aprefix + "ban")) {
       const random = getRandomInt(100, 100000)
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)")
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
@@ -339,8 +289,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
       msg.guild.members.get(args[1]).ban(cases[random].reason)
     } else if (msg.content.startsWith(c.aprefix + "kick")) {
       const random = getRandomInt(100, 100000)
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)")
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
@@ -368,8 +316,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
     } else if (msg.content.startsWith(c.aprefix + "mute")) {
       msg.channel.send('Oh no!\nThis command isn\'t implemented yet...')
       /*const random = getRandomInt(100, 100000)
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)")
       if (!msg.client.users.has(args[1])) return msg.channel.send("引数が正しくありません。")
@@ -396,8 +342,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
       msg.guild.channels.find(channel => channel.name === 'mod-log').send(embed)
       msg.guild.members.get(args[1]).ban(cases[random].reason)*/
     } else if (msg.content.startsWith(c.aprefix + "setstatus")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[2]) return msg.channel.send("引数を指定してください。(<<宣伝ID> <ステータス>>)")
       if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send("宣伝IDは数字でなければいけません。");
@@ -420,8 +364,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .addField("注記", ids[parseInt(args[1])].note);
       msg.channel.send(embed)
     } else if (msg.content.startsWith(c.aprefix + "setnote")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[2]) return msg.channel.send("引数を指定してください。")
       if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send("宣伝IDは数字でなければいけません。");
@@ -441,8 +383,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .addField("注記", ids[parseInt(args[1])].note);
       msg.channel.send(embed)
     } else if (msg.content.startsWith(c.aprefix + "get ")) {
-      logger.info("%s issued command: %s", msg.author.tag, msg.content);
-      console.log(f(lang.issueduser, msg.author.tag, msg.content));
       const args = msg.content.replace(c.aprefix, "").split(" ")
       if (!args[1]) return msg.channel.send("引数を指定してください。")
       if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send("宣伝IDは数字でなければいけません。");
