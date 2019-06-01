@@ -85,15 +85,18 @@ function removeRole(msg, rolename, isCommand = true) {
 }
 
 client.on('message', async msg => {
- const invite = /discord\.gg\/(.......)/.exec(msg.content)
+ const invite = /discord\.gg\/(.{1,})/gm.exec(msg.content)
  if (invite) {
+  logger.info('Caught invite URL!')
   if (invite[1]) {
-    const finvite = await client.fetchInvite(invite[1])
+    const finvite = await client.fetchInvite(invite[0])
     if (finvite.guild.id === msg.guild.id) return
     if (c.blacklistedGID.includes(finvite.guild.id)) {
+      logger.info('attempting to delete blacklisted invite url')
       msg.delete()
       return msg.reply('投稿された招待URLのサーバーはブラックリストに登録されています。').then(_ => _.delete(10000))
     } else if (!approvedguilds.includes(finvite.guild.id)) {
+      logger.info('attempting to delete not approved invite url')
       msg.delete()
       return msg.reply('投稿された招待URLはまだ承認されていないようです。\nDMを送って承認されてからもう一度お試しください。').then(_ => _.delete(10000))
     }
