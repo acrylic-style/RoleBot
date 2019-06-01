@@ -105,7 +105,7 @@ client.on('message', async msg => {
     const least = 2 // do not set to zero
     const id = getRandomInt(100, 100000) // 100 to 100000
     let msgurl
-    if (!msg.content.includes("--dry-run")) msgurl = await client.channels.get(c.channels['ad_application']).send(`${msg.author.tag}から[宣伝ID:`+id+`]:\n` + "```\n" + msg.content.replace(/```/gm, "---") + "\n```\n宣伝メッセージ:```\n" + msg.content.split("```")[1] + "\n```\n\n(" + msg.createdAt + "に送信されました。)")
+    if (!msg.content.includes("--dry-run")) msgurl = await client.channels.get(c.channels['ad_application']).send(`${msg.author.tag} (${msg.author.id})から[宣伝ID:`+id+`]:\n` + "```\n" + msg.content.replace(/```/gm, "---") + "\n```\n宣伝メッセージ:```\n" + msg.content.split("```")[1] + "\n```\n\n(" + msg.createdAt + "に送信されました。)")
     msg.channel.send(":ok_hand: メッセージを送信しました(Message has been sent)。 [宣伝ID: "+id+"]" + (msg.content.includes("--dry-run") ? "(--dry-runが指定済みなので送信されていません)" : "") + "\n最低" + least + "人のAdminに承認される必要があります。")
     if (msgurl) {
       try {
@@ -287,6 +287,13 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .addField("理由", cases[random].reason)
         .setColor([255,0,0]))
       msg.guild.members.get(args[1]).ban(cases[random].reason)
+    } else if (msg.content.startsWith(c.aprefix + "reply")) {
+      logger.info("%s issued command: %s", msg.author.tag, msg.content);
+      console.log(f(lang.issueduser, msg.author.tag, msg.content));
+      const args = msg.content.replace(c.aprefix, "").split(/\s{1,}/g)
+      if (!args[2]) return msg.channel.send("引数を指定してください。(reply <<ユーザーID> <メッセージ>>)")
+      msg.client.users.get(args[1]).send(`${msg.author}からのメッセージ: ${args.slice(2).join(' ')}`)
+      msg.channel.send(":white_check_mark: 返信を送信しました。")
     } else if (msg.content.startsWith(c.aprefix + "kick")) {
       const random = getRandomInt(100, 100000)
       const args = msg.content.replace(c.aprefix, "").split(" ")
