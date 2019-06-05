@@ -422,7 +422,7 @@ client.on('messageReactionAdd', (reaction, user) => {
       addRole(reaction.message, '許可', false)
     }
   }
-  handlers[reaction.message.id](reaction.emoji.id)
+  try { handlers[reaction.message.id](reaction.emoji.id) } catch(L) {} //eslint-disable-line
 })
 
 client.on('messageReactionRemove', (reaction, user) => {
