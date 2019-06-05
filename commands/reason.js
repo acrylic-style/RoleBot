@@ -4,7 +4,7 @@ const { commands } = require('bot-framework/commands')
 
 module.exports = class extends Command {
   constructor() {
-    super('help', { args: ['[Command]'] })
+    super('help', { args: ['[Command]'], permission: 8, allowedIn: ['TextChannel'] })
   }
 
   async run(msg, lang, args, sendDeletable) {

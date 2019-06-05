@@ -101,7 +101,7 @@ client.on('message', async msg => {
     }
   }
   if (msg.author.bot) return
-  const supportedCommands = ['version', 'eval', 'help']
+  const supportedCommands = ['version', 'eval', 'help', 'reason']
   if (msg.content.startsWith(c.prefix) && supportedCommands.filter(e => msg.content.includes(e))) return dispatcher(msg, lang, c.prefix, c.owners, c.prefix)
   if (msg.channel.constructor.name === 'DMChannel' || msg.channel.constructor.name === 'GroupDMChannel') {
     if (c.blacklistedDMUID.includes(msg.author.id)) return true
