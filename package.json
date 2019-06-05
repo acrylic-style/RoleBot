@@ -6,7 +6,8 @@
   "dependencies": {
     "bot-framework": "github:acrylic-style/bot-framework",
     "logger.js": "github:acrylic-style/logger.js",
-    "simple-git": "^1.113.0"
+    "simple-git": "^1.113.0",
+    "string-format": "^2.0.0"
   },
   "devDependencies": {},
   "scripts": {
@@ -16,7 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/acrylic-style/RoleBot.git"
   },
-  "author": "",
+  "author": "acrylic-style <me@acrylicstyle.xyz>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/acrylic-style/RoleBot/issues"

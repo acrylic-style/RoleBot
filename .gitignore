@@ -1,8 +1,5 @@
 /node_modules/
-/nohup.out
-/shell
-/latest.log
 /secret.json
-/lock
 /config.json
 /data/*.json
+/logs/
