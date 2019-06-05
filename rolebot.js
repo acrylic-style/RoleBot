@@ -1,4 +1,4 @@
-const f =require('string-format')
+const f = require('string-format')
 const Discord = require('discord.js')
 const client = new Discord.Client()
 const s = require('./config.json')
@@ -211,12 +211,6 @@ client.on('message', async msg => {
       logger.info('%s issued admin command: %s', msg.author.tag, msg.content)
       console.log(f(lang.issuedadmin, msg.author.tag, msg.content))
       msg.channel.send(f(lang.adminhelp, c.aprefix, c.prefix))
-    } else if (msg.content.startsWith(c.aprefix + 'reason')) {
-      const args = msg.content.replace(c.aprefix, '').split(' ')
-      if (!args[2]) return msg.channel.send('引数を指定してください。(<<該当するメッセージID> <理由>>)')
-      if (!Object.keys(cases).includes(args[1])) return msg.channel.send('引数が正しくありません。')
-      cases[args[1]].reason = args.slice(2).join(' ')
-      msg.channel.send(':white_check_mark: reasonを設定しました')
     } else if (msg.content.startsWith(c.aprefix + 'warn') || msg.content.startsWith(c.aprefix + 'warning')) {
       const random = getRandomInt(100, 100000)
       const args = msg.content.replace(c.aprefix, '').split(' ')
