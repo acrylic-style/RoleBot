@@ -1,5 +1,5 @@
 /node_modules/
 /secret.json
-/config.json
+**/config.json
 /data/*.json
 /logs/
