@@ -84,7 +84,7 @@ function removeRole(msg, rolename, isCommand = true) {
 
 client.on('message', async msg => {
   const invite = /discord\.gg\/(.{1,})/gm.exec(msg.content)
-  if (invite) {
+  if (invite && msg.guild) {
     logger.info('Caught invite URL!')
     if (invite[1]) {
       const finvite = await client.fetchInvite(invite[0])
