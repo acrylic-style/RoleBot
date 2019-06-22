@@ -15,8 +15,8 @@ const cases = JSON.parse(fs.readFileSync('./data/cases.json'))
 const dispatcher = require('bot-framework/dispatcher')
 const handlers = {}
 const approves = {}
-const approvedguilds = require('./data/approvedguilds.json')
 const ids = require('./data/ads.json')
+const approvedguilds = Object.values(ids).filter(({ status }) => status === 'approved').map(e => e.guildid)
 //const mutes = require('./data/mutes.json') // { serverID: { userID: { user: userID(for Object.values), expires: number, ... } } }
 
 function getRandomInt(min, max) {
@@ -117,9 +117,9 @@ client.on('message', async msg => {
       ]).catch(e => msgurl.channel.send('Something went wrong: ' + e.stack || e))
     }
     const url = `https://discordapp.com/channels/${msgurl.guild.id}/${msgurl.channel.id}/${msgurl.id}`
-    ids[id] = { status: 'pending', 'url': url, 'note': '(none)', 'by': msg.author.name, 'avatarURL': msg.author.avatarURL }
+    ids[id] = { status: 'pending', 'url': url, 'note': '(none)', 'by': msg.author.name, 'avatarURL': msg.author.avatarURL, 'guildid': (await client.fetchInvite(msg.content)).guild.id }
     if (msg.content.includes('--dry-run')) ids[id].note = 'Generated with dry-run option. Do not approve.'
-    handlers[msgurl.id] = async (eid) => {
+    handlers[msgurl.id] = async eid => {
       if (eid === c.emojis['tickYes']) {
         approves[msgurl.id] = (typeof approves[msgurl.id] !== 'undefined' ? approves[msgurl.id] + 1 : 1)
         if (approves[msgurl.id] >= least) {
@@ -144,9 +144,7 @@ client.on('message', async msg => {
   } //dispatcher(msg, lang, c.prefix, ['575673035743559701'])
   if (msg.content.startsWith(c.prefix)) {
     logger.info(`${msg.author.tag} sent command: ${msg.content}`)
-    if (msg.content === c.prefix + 'help') {
-      msg.channel.send(f(lang.userhelp, c.prefix, c.aprefix))
-    } else if (msg.content.startsWith(c.prefix + 'remindme ')) {
+    if (msg.content.startsWith(c.prefix + 'remindme ')) {
       const args = msg.content.replace(c.prefix, '').split(' ')
       setTimeout(() => { msg.reply(args.slice(2)) }, parseInt(args[1]) * 60 * 1000)
       msg.channel.send(':ok_hand:')
@@ -157,54 +155,21 @@ client.on('message', async msg => {
     else if (msg.content === c.prefix + 'kyoka' || msg.content === c.prefix + '許可') addRole(msg, '許可')
     else if (msg.content === c.prefix + 'stw' || msg.content === c.prefix + '世界を救え' || msg.content === c.prefix + 'set-stw') addRole(msg, '世界を救う者')
     else if (msg.content === c.prefix + 'ios' || msg.content === c.prefix + 'mobile' || msg.content === c.prefix + 'スマホ') addRole(msg, 'スマホ')
-    else if (msg.content.startsWith(c.prefix + 'roles')) {
-      const embed = new Discord.RichEmbed()
-        .setTitle(':fork_and_knife: 機種割り当て')
-        .setColor([3,255,255])
-        .setDescription(f(`
- | PC: \`{0}pc\`
- | PS4: \`{0}ps4\`
- | Xbox: \`{0}xbox\`
- | スマホ: \`{0}スマホ\`
- | Switch: \`{0}switch\`
- | ---------------
- | PvE: \`{0}stw\`
-`, c.prefix))
-      msg.channel.send(embed)
-    } else if (msg.content.startsWith(c.prefix + 'get ')) {
-      const args = msg.content.replace(c.prefix, '').split(' ')
-      if (!args[1]) return msg.channel.send('引数を指定してください。')
-      if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send('宣伝IDは数字でなければいけません。')
-      if (!ids[parseInt(args[1])]) return msg.channel.send('指定された宣伝IDは存在しません。')
-      const statuses = {
-        'starred': 'スター(Starred)',
-        'approved': '承認済み(Approved)',
-        'pending': '保留中(Pending)',
-        'unapproved': '承認解除(UnApproved)',
-        'rejected': '拒否(Rejected)',
-      }
-      const embed = new Discord.RichEmbed()
-        .setTitle('指定された宣伝IDの情報')
-        .addField('状態', statuses[ ids[parseInt(args[1])].status ])
-        .addField('メッセージ', ids[parseInt(args[1])].url)
-        .addField('注記', ids[parseInt(args[1])].note)
-      msg.channel.send(embed)
-    } else if (msg.content.startsWith(c.prefix + 'getp ')) {
-      const args = msg.content.replace(c.aprefix, '').split(' ')
-      if (!args[1]) return msg.channel.send('引数を指定してください。(<処罰Case番号>)')
-      console.log(Object.keys(cases))
-      if (!Object.keys(cases).includes(args[1])) return msg.channel.send('引数が正しくありません。')
-      const user = msg.client.users.get(cases[args[1]].user)
-      const mod = msg.client.users.get(cases[args[1]].moderator)
-      const embed = new Discord.RichEmbed()
-        .setTitle(`${cases[args[1]].type} | Case #${args[1]}`)
-        .addField('ユーザー', `${user.tag} (${user})`, true)
-        .addField('モデレーター', mod.tag, true)
-        .addField('理由', cases[args[1]].reason)
-        .setDescription('メッセージ: ```'+cases[args[1]].message+'```')
-        .setColor([255,0,0])
-      msg.channel.send(embed)
-    }
+  } else if (msg.content.startsWith(c.prefix + 'getp ')) {
+    const args = msg.content.replace(c.aprefix, '').split(' ')
+    if (!args[1]) return msg.channel.send('引数を指定してください。(<処罰Case番号>)')
+    console.log(Object.keys(cases))
+    if (!Object.keys(cases).includes(args[1])) return msg.channel.send('引数が正しくありません。')
+    const user = msg.client.users.get(cases[args[1]].user)
+    const mod = msg.client.users.get(cases[args[1]].moderator)
+    const embed = new Discord.RichEmbed()
+      .setTitle(`${cases[args[1]].type} | Case #${args[1]}`)
+      .addField('ユーザー', `${user.tag} (${user})`, true)
+      .addField('モデレーター', mod.tag, true)
+      .addField('理由', cases[args[1]].reason)
+      .setDescription('メッセージ: ```'+cases[args[1]].message+'```')
+      .setColor([255,0,0])
+    msg.channel.send(embed)
   }
   if (msg.content.startsWith(c.aprefix) && msg.member.hasPermission(8)) {
     if (msg.content === c.aprefix + 'help') {
@@ -215,7 +180,7 @@ client.on('message', async msg => {
       const random = getRandomInt(100, 100000)
       const args = msg.content.replace(c.aprefix, '').split(' ')
       if (!args[1]) return msg.channel.send('引数を指定してください。(<<ユーザーID> [理由] [メッセージ]>)')
-      if (!msg.client.users.has(args[1])) return msg.channel.send('引数が正しくありません。')
+      if (!msg.client.users.has(args[1])) return msg.channel.send('指定されたユーザーが見つかりません。')
       const user = msg.client.users.get(args[1])
       const message = `
 ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイドライン( https://discordapp.com/guidelines )違反、またはDiscord規約( https://discordapp.com/terms )違反が確認されました。
@@ -366,24 +331,6 @@ ${msg.guild.name}サーバーのルール違反、もしくはDiscordガイド�
         .addField('メッセージ', ids[parseInt(args[1])].url)
         .addField('注記', ids[parseInt(args[1])].note)
       msg.channel.send(embed)
-    } else if (msg.content.startsWith(c.aprefix + 'get ')) {
-      const args = msg.content.replace(c.aprefix, '').split(' ')
-      if (!args[1]) return msg.channel.send('引数を指定してください。')
-      if (!Number.isInteger(parseInt(args[1]))) return msg.channel.send('宣伝IDは数字でなければいけません。')
-      if (!ids[parseInt(args[1])]) return msg.channel.send('指定された宣伝IDは存在しません。')
-      const statuses = {
-        'starred': 'スター(Starred)',
-        'approved': '承認済み(Approved)',
-        'pending': '保留中(Pending)',
-        'unapproved': '承認解除(UnApproved)',
-        'rejected': '拒否(Rejected)',
-      }
-      const embed = new Discord.RichEmbed()
-        .setTitle('指定された宣伝IDの情報')
-        .addField('状態', statuses[ ids[parseInt(args[1])].status ])
-        .addField('メッセージ', ids[parseInt(args[1])].url)
-        .addField('注記', ids[parseInt(args[1])].note)
-      msg.channel.send(embed)
     } else if (msg.content === c.aprefix + 'reload') {
       delete require.cache[path.resolve('./config.json')]
       delete require.cache['./config.json']
@@ -444,8 +391,12 @@ client.login(s.token)
 
 fs.writeFileSync('./data/cases.json', JSON.stringify(cases))
 fs.writeFileSync('./data/ads.json', JSON.stringify(ids))
+//fs.writeFileSync('./data/approvedguilds.json', JSON.stringify(approvedguilds))
 
 setInterval(() => {
+  delete require.cache[require.resolve('./data/cases.json')]
+  delete require.cache[require.resolve('./data/ads.json')]
   fs.writeFileSync('./data/cases.json', JSON.stringify(cases))
   fs.writeFileSync('./data/ads.json', JSON.stringify(ids))
+  // fs.writeFileSync('./data/approvedguilds.json', JSON.stringify(approvedguilds))
 }, 60 * 1000)
